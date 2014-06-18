@@ -1,63 +1,84 @@
-#!/bin/sh -e
+#!/usr/bin/env bash
 # Author: Márcio Almada
 # Description: Installs Fedora 20 basics environment
-# Usage: su -c "sh install.sh"
-# set -e
+# Usage: sudo bash fedora-bootstrap.sh
 
-set -o errexit
+trap "exit 1" ERR
 
-yum update -y
+USERHOME=$(eval "echo ~$SUDO_USER")
+USERBASHRC="$USERHOME/.bashrc"
 
-# basic
-yum install -y nano wget tree gnome-tweak-tool deluge audacious audacious-plugin audacious-plugins-exotic gparted grsync
+# add virtual box repo
+echo -e "\nAdding Virtual Box repo to yum...\n"
+curl http://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo -o /etc/yum.repos.d/virtualbox.repo
 
-# git
-yum install -y git git-cola
+# update distro
+echo -e "\nUpdating distro...\n"
+yum clean all
+yum -y update
 
-# phpbrew
+# basic packages
+echo -e "\nInstalling basic packages with yum...\n"
+yum install -y nano wget curl tree gnome-tweak-tool deluge audacious audacious-plugin audacious-plugins-exotic gparted grsync git git-daemon git-cola livecd-tools spin-kickstarts system-config-kickstart qemu gstream pgadmin3
+
+# install fedy
+echo -e "\nInstalling Fedy...\n"
+command -v fedy || su -c "curl http://satya164.github.io/fedy/fedy-installer -o fedy-installer && chmod +x fedy-installer && ./fedy-installer"
+
+echo -e "\nInstalling basic programs with Fedy...\n"
+fedy --enable-log --exec config_selinux
+fedy --enable-log --exec sublime_text3
+fedy --enable-log --exec google_chrome
+fedy --enable-log --exec tor_browser
+fedy --enable-log --exec config_sudo
+fedy --enable-log --exec oracle_jre 
+fedy --enable-log --exec nautilus_dropbox
+fedy --enable-log --exec core_fonts
+fedy --enable-log --exec adobe_flash
+fedy --enable-log --exec media_codecs
+fedy --enable-log --exec rpmfusion_repos
+
+# install docker
+yum -y install docker-io && systemctl enable docker
+
+# install phpbrew requirements
+echo -e "\nInstalling phpbrew requirements...\n"
 yum install -y php php-devel php-pear bzip2-devel yum-utils bison re2c libmcrypt-devel libpqxx-devel libxslt-devel
-curl -L -O https://raw.githubusercontent.com/c9s/phpbrew/master/phpbrew
+
+# install phpbrew
+echo -e "\nInstalling phpbrew...\n"
+curl -L -O https://raw.githubusercontent.com/phpbrew/phpbrew/master/phpbrew
 chmod +x phpbrew
 mv phpbrew /usr/local/bin/phpbrew
-/usr/local/bin/phpbrew init
-source /root/.phpbrew/bashrc
-echo '# loading phpbrew' >> ~/.bashrc
-echo 'source ~/.phpbrew/bashrc' >> ~/.bashrc
-
-# fedy
-curl http://satya164.github.io/fedy/fedy-installer -o fedy-installer && chmod +x fedy-installer && ./fedy-installer
-fedy --enable-log --exec google_chrome
-fedy --enable-log --exec sublime_text3
-fedy --enable-log --exec tor_browser
-fedy --enable-log --exec config_selinux
-fedy --enable-log --exec config_sudo
-fedy --enable-log --exec oracle_jre
-fedy --enable-log --exec adobe_flash
+runuser -l $SUDO_USER -c '/usr/local/bin/phpbrew init'
+curl https://raw.githubusercontent.com/phpbrew/phpbrew/master/completion/bash/_phpbrew -o "$USERHOME/.phpbrew/comp"
+grep -q '# loading phpbrew' "$USERBASHRC" || echo -e "\n# loading phpbrew\nsource ~/.phpbrew/bashrc && source ~/.phpbrew/comp\n" >> $USERBASHRC
+    
+# echo -e "\nInstalling php 5.5.13 with phpbrew...\n"
+# /usr/local/bin/phpbrew install 5.5.13 +default+dbs-json+tokenizer && phpbrew ext install phar && phpbrew ext install xdebug
 
 # VirtualBox
-wget http://download.virtualbox.org/virtualbox/rpm/fedora/virtualbox.repo -O /etc/yum.repos.d/virtualbox.repo
-yum update -y
-yum install -y VirtualBox.x86_64
+# yum install -y VirtualBox
 
 # composer
+echo -e "\nInstalling composer...\n"
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # phpunit
-wget https://phar.phpunit.de/phpunit-beta.phar
-chmod +x phpunit-beta.phar
-mv phpunit-beta.phar /usr/local/bin/phpunit
+echo -e "\nInstalling phpunit...\n"
+curl https://phar.phpunit.de/phpunit-beta.phar -o /usr/local/bin/phpunit
+chmod +x /usr/local/bin/phpunit
 
 # php-cs-fixer
-wget http://get.sensiolabs.org/php-cs-fixer.phar -O /usr/local/bin/php-cs-fixer
+echo -e "\nInstalling php-cs-fixer...\n"
+curl http://get.sensiolabs.org/php-cs-fixer.phar -o /usr/local/bin/php-cs-fixer
 chmod +x /usr/local/bin/php-cs-fixer
 
 # php repl
-# composer global require psy/psysh
-wget psysh.org/psysh
-chmod +x psysh
-mv psysh /usr/local/bin/psysh
+echo -e "\nInstalling psysh (php repl)...\n"
+curl http://psysh.org/psysh -o /usr/local/bin/psysh
+chmod +x /usr/local/bin/psysh
 
-# revisor
-yum install -y revisor
+echo -e "\nAll set!\n"
 
-echo "OK, all set :)"
+exit 0
