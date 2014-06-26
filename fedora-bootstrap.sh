@@ -19,7 +19,13 @@ yum -y update
 
 # basic packages
 echo -e "\nInstalling basic packages with yum...\n"
-yum install -y nano wget curl tree gnome-tweak-tool deluge audacious audacious-plugin audacious-plugins-exotic gparted grsync git git-daemon git-cola livecd-tools spin-kickstarts system-config-kickstart qemu gstream pgadmin3
+yum install -y wget curl nano tree gparted grsync \
+gnome-tweak-tool \
+audacious audacious-plugin audacious-plugins-exotic \
+git git-daemon git-cola \
+livecd-tools spin-kickstarts system-config-kickstart qemu gstream \
+deluge xchat polari \
+pgadmin3
 
 # install fedy
 echo -e "\nInstalling Fedy...\n"
@@ -63,6 +69,9 @@ grep -q '# loading phpbrew' "$USERBASHRC" || echo -e "\n# loading phpbrew\nsourc
 # composer
 echo -e "\nInstalling composer...\n"
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# add vendor/bin to path
+grep -q '# add vendor/bin to path' "$USERBASHRC" || echo -e '\n# add vendor/bin to path\nexport PATH=vendor/bin:$PATH\n' >> $USERBASHRC
 
 # phpunit
 echo -e "\nInstalling phpunit...\n"
