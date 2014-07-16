@@ -49,7 +49,7 @@ yum -y install docker-io && systemctl enable docker
 
 # install phpbrew requirements
 echo -e "\nInstalling phpbrew requirements...\n"
-yum install -y php php-devel php-pear bzip2-devel yum-utils bison re2c libmcrypt-devel libpqxx-devel libxslt-devel
+yum install -y php php-devel php-pear bzip2-devel yum-utils bison re2c libmcrypt-devel libpqxx-devel libxslt-devel php-mbstring php-pgsql php-mcrypt
 
 # install phpbrew
 echo -e "\nInstalling phpbrew...\n"
